@@ -14,15 +14,4 @@
 # specific language governing permissions and limitations
 # under the License.
 
-FROM python:alpine
-
-WORKDIR /python-docker
-
-COPY . .
-RUN ls
-# Create a new user with UID 10016
-RUN addgroup -g 10016 choreo && \
-    adduser  --disabled-password  --no-create-home --uid 10016 --ingroup choreo choreouser
-USER 10016
-EXPOSE 8000
-CMD [ "flask", "run", "--host=0.0.0.0"]
+web: uvicorn main:app --host 0.0.0.0 --port 8000
