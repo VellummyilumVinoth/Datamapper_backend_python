@@ -14,4 +14,4 @@
 # specific language governing permissions and limitations
 # under the License.
 
-web: uvicorn main:app --host 0.0.0.0 --port 8000
+web: flask run --host=0.0.0.0 --port=8000 --app=app
