@@ -23,8 +23,8 @@ RUN addgroup -g 10016 choreo && \
 # Switch to the new user
 USER 10016
 
-# Expose port 8000 for FastAPI
-EXPOSE 8000
+# Expose port 5000 for FastAPI
+EXPOSE 5000
 
 # Command to run the FastAPI server using uvicorn
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD [ "flask", "run", "--host=0.0.0.0"]
