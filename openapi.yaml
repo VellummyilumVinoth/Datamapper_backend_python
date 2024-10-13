@@ -21,7 +21,7 @@ info:
     This API allows users to upload files (PDF, text, images, and Word documents) or text and generate mapping instructions or records using Azure OpenAI GPT-4 for processing.
   version: 1.0.0
 servers:
-  - url: http://localhost:8000
+  - url: http://localhost:5000
 tags:
   - name: file_upload
     description: API endpoints for file uploads and processing
