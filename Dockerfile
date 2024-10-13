@@ -14,4 +14,17 @@
 # specific language governing permissions and limitations
 # under the License.
 
-web: flask run --host=0.0.0.0 --port=8000 --app=app
+FROM python:alpine
+
+# Create a new user with UID 10016
+RUN addgroup -g 10016 choreo && \
+    adduser --disabled-password --no-create-home --uid 10016 --ingroup choreo choreouser
+
+# Switch to the new user
+USER 10016
+
+# Expose port 8000 for FastAPI
+EXPOSE 8000
+
+# Command to run the FastAPI server using uvicorn
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
