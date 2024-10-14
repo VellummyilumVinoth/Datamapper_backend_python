@@ -14,17 +14,24 @@
 # specific language governing permissions and limitations
 # under the License.
 
-FROM python:alpine
+# Use an official Python runtime as a parent image
+FROM python:3.9-slim-bullseye
 
-# Create a new user with UID 10016
-RUN addgroup -g 10016 choreo && \
-    adduser --disabled-password --no-create-home --uid 10016 --ingroup choreo choreouser
+# Set the working directory in the container
+WORKDIR /app
 
-# Switch to the new user
-USER 10016
+# Copy the requirements file to the working directory
+COPY requirements.txt .
 
-# Expose port 5000 for FastAPI
+# Install any dependencies specified in the requirements file
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the current directory contents into the container at /app
+COPY . .
+
+# Expose the port the app runs on
 EXPOSE 5000
 
-# Command to run the FastAPI server using uvicorn
-CMD [ "flask", "run", "--host=0.0.0.0"]
+# Command to run the FastAPI app using Uvicorn
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "5000"]
+
