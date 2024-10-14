@@ -21,7 +21,7 @@ FROM python:alpine
 WORKDIR /app
 
 # Copy the requirements file to the working directory
-COPY requirements.txt
+COPY requirements.txt requirements.txt
 
 # Install any dependencies specified in the requirements file
 RUN pip3 install -r requirements.txt
