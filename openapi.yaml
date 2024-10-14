@@ -28,7 +28,7 @@ externalDocs:
 servers:
   - url: http://localhost:8000
 paths:
-  /file_upload/generate_mapping_instruction/:
+  /generate_mapping_instruction/:
     post:
       tags:
         - File Upload
@@ -61,8 +61,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-
-  /file_upload/generate_record/:
+  /generate_record/:
     post:
       tags:
         - File Upload
