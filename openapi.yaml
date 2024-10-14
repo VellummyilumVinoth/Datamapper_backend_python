@@ -28,7 +28,7 @@ externalDocs:
 servers:
   - url: http://localhost:8000
 paths:
-  /file_upload/generate_mapping_instruction/:
+  /file_upload/generate_mapping_instruction:
     post:
       summary: Generate Mapping Instruction
       operationId: File_upload_generate_mapping_instruction__post
@@ -51,7 +51,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /file_upload/generate_record/:
+  /file_upload/generate_record:
     post:
       summary: Generate Record
       operationId: File_upload_generate_record__post
