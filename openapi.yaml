@@ -18,6 +18,8 @@ openapi: 3.0.3
 info:
   title: FastAPI
   version: 0.1.0
+servers:
+  - url: http://localhost:5000
 paths:
   /generate_mapping_instruction/:
     post:
