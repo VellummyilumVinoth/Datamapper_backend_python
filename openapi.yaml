@@ -14,10 +14,17 @@
 # specific language governing permissions and limitations
 # under the License.
 
-openapi: 3.0.3
+openapi: 3.0.2
 info:
-  title: FastAPI
+  title: File Upload - Python REST API
+  description: API for processing text, PDFs, images, and Word documents to generate mapping instructions or records
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
   version: 0.1.0
+externalDocs:
+  description: Choreo
+  url: https://choreo.dev
 servers:
   - url: http://localhost:8000
 paths:

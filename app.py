@@ -28,7 +28,15 @@ from fastapi import FastAPI, UploadFile, HTTPException, Form
 from fastapi.middleware.cors import CORSMiddleware
 from tenacity import retry, stop_after_attempt, wait_exponential
 
-app = FastAPI()
+app = FastAPI(
+    title="File Upload - Python REST API",
+    description="API for processing text, PDFs, images, and Word documents to generate mapping instructions or records",
+    version="0.1.0",
+    license_info={"name": "Apache 2.0", "url": "https://www.apache.org/licenses/LICENSE-2.0"},
+)
+
+# Changing the default openapi version to 3.0.2 as Choreo does not support the default version
+app.openapi_version = "3.0.2"
 
 app.add_middleware(
     CORSMiddleware,
