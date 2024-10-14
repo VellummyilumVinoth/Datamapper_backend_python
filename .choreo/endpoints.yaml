@@ -30,10 +30,11 @@ endpoints:
   # +optional Network level visibility of this endpoint. Defaults to Public
   # Accepted values: Project|Organization|Public.
   networkVisibility: Public
-  # +optional Context (base path) of the API that is exposed via this endpoint.
-  # This is mandatory if the endpoint type is set to REST, GraphQL or WS.
-  context: /file_upload
   # +optional Path to the schema definition file. Defaults to wild card route if not provided
   # This is only applicable to REST and WS endpoint types.
   # The path should be relative to the docker context.
   schemaFilePath: openapi.yaml
+
+  # +optional Context (base path) of the API that is exposed via this endpoint.
+  # This is mandatory if the endpoint type is set to REST, GraphQL or WS.
+  context: /file_upload
