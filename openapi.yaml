@@ -16,28 +16,19 @@
 
 openapi: 3.0.3
 info:
-  title: File Upload - Python REST API
-  description: API for processing text, PDFs, images, and Word documents to generate mapping instructions or records.
-  license:
-      name: Apache 2.0
-      url: http://www.apache.org/licenses/LICENSE-2.0.html
+  title: FastAPI
   version: 0.1.0
-externalDocs:
-  description: Choreo
-  url: https://choreo.dev
-servers:
-  - url: http://localhost:8000
 paths:
-  /generate_mapping_instruction/:
+  /file_upload/generate_mapping_instruction/:
     post:
       summary: Generate Mapping Instruction
-      operationId: File_upload_generate_mapping_instruction__post
+      operationId: generate_mapping_instruction_file_upload_generate_mapping_instruction__post
       requestBody:
         content:
           multipart/form-data:
             schema:
               allOf:
-                - $ref: '#/components/schemas/File_upload_generate_mapping_instruction__post'
+                - $ref: '#/components/schemas/Body_generate_mapping_instruction_file_upload_generate_mapping_instruction__post'
               title: Body
       responses:
         '200':
@@ -51,16 +42,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /generate_record/:
+  /file_upload/generate_record/:
     post:
       summary: Generate Record
-      operationId: File_upload_generate_record__post
+      operationId: generate_record_file_upload_generate_record__post
       requestBody:
         content:
           multipart/form-data:
             schema:
               allOf:
-                - $ref: '#/components/schemas/File_upload_generate_record__post'
+                - $ref: '#/components/schemas/Body_generate_record_file_upload_generate_record__post'
               title: Body
       responses:
         '200':
@@ -76,7 +67,7 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
-    File_upload_generate_mapping_instruction__post:
+    Body_generate_mapping_instruction_file_upload_generate_mapping_instruction__post:
       properties:
         file:
           type: string
@@ -86,8 +77,8 @@ components:
           type: string
           title: Text
       type: object
-      title: File_upload_generate_mapping_instruction__post
-    File_upload_generate_record__post:
+      title: Body_generate_mapping_instruction_file_upload_generate_mapping_instruction__post
+    Body_generate_record_file_upload_generate_record__post:
       properties:
         file:
           type: string
@@ -97,7 +88,7 @@ components:
           type: string
           title: Text
       type: object
-      title: File_upload_generate_record__post
+      title: Body_generate_record_file_upload_generate_record__post
     HTTPValidationError:
       properties:
         detail:
