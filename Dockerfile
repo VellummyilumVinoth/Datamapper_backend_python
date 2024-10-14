@@ -36,8 +36,8 @@ RUN addgroup -g 10016 choreo && \
 USER 10016
 
 # Expose the port the app runs on
-EXPOSE 5000
+EXPOSE 8000
 
 # Command to run the FastAPI app using Uvicorn
-CMD ["uvicorn", "app:app", "--host", "localhost", "--port", "5000"]
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
 
