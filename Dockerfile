@@ -29,10 +29,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the current directory contents into the container at /app
 COPY . .
 
-# Create a new user with UID 10013
-RUN addgroup -g 10013 choreo && \
-    adduser  --disabled-password  --no-create-home --uid 10013 --ingroup choreo choreouser
-USER 10013
+RUN ls
+# Create a new user with UID 10016
+RUN addgroup -g 10016 choreo && \
+    adduser  --disabled-password  --no-create-home --uid 10016 --ingroup choreo choreouser
+USER 10016
 
 # Expose the port the app runs on
 EXPOSE 5000
