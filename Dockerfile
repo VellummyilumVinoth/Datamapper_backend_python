@@ -26,6 +26,12 @@ COPY requirements.txt .
 # Install any dependencies specified in the requirements file
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Set environment variables 
+ENV AZURE_OPENAI_API_KEY="c870e424bc5a4718912102acbe1f34f8"
+ENV AZURE_OPENAI_ENDPOINT="https://ballerina-ai-eastus.openai.azure.com/"
+ENV API_VERSION="2023-07-01-preview"
+ENV AZURE_DEPLOYMENT_NAME="gpt4o"
+
 # Copy the current directory contents into the container at /app
 COPY . .
 
