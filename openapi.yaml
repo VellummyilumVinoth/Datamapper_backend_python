@@ -16,129 +16,100 @@
 
 openapi: 3.0.3
 info:
-  title: File Upload and Mapping Instruction API
-  description: >
-    This API allows users to upload files (PDF, text, images, and Word documents) or text and generate mapping instructions or records using Azure OpenAI GPT-4 for processing.
+  title: File Processing API
+  description: API for processing text, PDFs, images, and Word documents to generate mapping instructions or records.
+  license:
+      name: Apache 2.0
+      url: http://www.apache.org/licenses/LICENSE-2.0.html
   version: 1.0.0
 servers:
   - url: http://localhost:5000
-tags:
-  - name: file_upload
-    description: API endpoints for file uploads and processing
-
 paths:
-  /file_upload/generate_mapping_instruction/:
+  /generate_mapping_instruction/:
     post:
-      tags:
-        - file_upload
-      summary: Generate mapping instructions from file or text input
-      operationId: generateMappingInstruction
+      summary: Generate mapping instruction from uploaded file or text
       requestBody:
         required: true
         content:
           multipart/form-data:
             schema:
-              type: object
-              properties:
-                file:
-                  type: string
-                  format: binary
-                  description: The file to be uploaded and processed.
-                text:
-                  type: string
-                  description: The text input to be processed.
+              $ref: "#/components/schemas/FileUploadInput"
+              required:
+                - file
+                - text
       responses:
-        "200":
-          description: Successfully generated mapping instruction
+        '200':
+          description: Mapping instruction generated successfully
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  file_content:
-                    type: string
-                    description: The processed content of the file or text input.
-        "400":
-          description: No file or text provided, or unsupported file type.
+                $ref: "#/components/schemas/FileUploadOutput"
+        '400':
+          description: Invalid input (no file or text, unsupported file type)
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  detail:
-                    type: string
-        "500":
-          description: Server error while processing file or text input.
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Error processing file or text
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  detail:
-                    type: string
+                $ref: "#/components/schemas/ErrorResponse"
 
-  /file_upload/generate_record/:
+  /generate_record/:
     post:
-      tags:
-        - file_upload
-      summary: Generate records from file or text input
-      operationId: generateRecord
+      summary: Generate records from uploaded file or text
       requestBody:
         required: true
         content:
           multipart/form-data:
             schema:
-              type: object
-              properties:
-                file:
-                  type: string
-                  format: binary
-                  description: The file to be uploaded and processed.
-                text:
-                  type: string
-                  description: The text input to be processed.
+              $ref: "#/components/schemas/FileUploadInput"
+              required:
+                - file
+                - text
       responses:
-        "200":
-          description: Successfully generated records
+        '200':
+          description: Record generated successfully
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  file_content:
-                    type: string
-                    description: The processed content of the file or text input.
-        "400":
-          description: No file or text provided, or unsupported file type.
+                $ref: "#/components/schemas/FileUploadOutput"
+        '400':
+          description: Invalid input (no file or text, unsupported file type)
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  detail:
-                    type: string
-        "500":
-          description: Server error while processing file or text input.
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Error processing file or text
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  detail:
-                    type: string
+                $ref: "#/components/schemas/ErrorResponse"
 
 components:
   schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        detail:
+          type: string
+          description: Error detail
     FileUploadInput:
       type: object
       properties:
         file:
           type: string
           format: binary
+          description: File to process
         text:
           type: string
-        process_type:
+          description: Text input
+    FileUploadOutput:
+      type: object
+      properties:
+        file_content:
           type: string
-          enum:
-            - mapping_instruction
-            - records
+          description: Generated content
