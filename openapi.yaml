@@ -21,101 +21,110 @@ info:
   license:
       name: Apache 2.0
       url: http://www.apache.org/licenses/LICENSE-2.0.html
-  version: 1.0.0
+  version: 0.1.0
 externalDocs:
   description: Choreo
   url: https://choreo.dev
 servers:
-  - url: http://localhost:8000
+  - url: http://localhost:8000/file_upload
 paths:
   /generate_mapping_instruction/:
     post:
-      tags:
-        - File Upload
-      summary: Generate mapping instruction from uploaded file or text
+      summary: Generate Mapping Instruction
+      operationId: File_upload_generate_mapping_instruction__post
       requestBody:
-        required: true
         content:
           multipart/form-data:
             schema:
-              $ref: "#/components/schemas/FileUploadInput"
-              required:
-                - file
-                - text
+              allOf:
+                - $ref: '#/components/schemas/File_upload_generate_mapping_instruction__post'
+              title: Body
       responses:
         '200':
-          description: Mapping instruction generated successfully
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/FileUploadOutput"
-        '400':
-          description: Invalid input (no file or text, unsupported file type)
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-        '500':
-          description: Error processing file or text
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: '#/components/schemas/HTTPValidationError'
   /generate_record/:
     post:
-      tags:
-        - File Upload
-      summary: Generate records from uploaded file or text
+      summary: Generate Record
+      operationId: File_upload_generate_record__post
       requestBody:
-        required: true
         content:
           multipart/form-data:
             schema:
-              $ref: "#/components/schemas/FileUploadInput"
-              required:
-                - file
-                - text
+              allOf:
+                - $ref: '#/components/schemas/File_upload_generate_record__post'
+              title: Body
       responses:
         '200':
-          description: Record generated successfully
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/FileUploadOutput"
-        '400':
-          description: Invalid input (no file or text, unsupported file type)
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-        '500':
-          description: Error processing file or text
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-
+                $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
-    ErrorResponse:
-      type: object
-      properties:
-        detail:
-          type: string
-          description: Error detail
-    FileUploadInput:
-      type: object
+    File_upload_generate_mapping_instruction__post:
       properties:
         file:
           type: string
           format: binary
-          description: File to process
+          title: File
         text:
           type: string
-          description: Text input
-    FileUploadOutput:
+          title: Text
       type: object
+      title: File_upload_generate_mapping_instruction__post
+    File_upload_generate_record__post:
       properties:
-        file_content:
+        file:
           type: string
-          description: Generated content
+          format: binary
+          title: File
+        text:
+          type: string
+          title: Text
+      type: object
+      title: File_upload_generate_record__post
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+              - type: string
+              - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+        - loc
+        - msg
+        - type
+      title: ValidationError
