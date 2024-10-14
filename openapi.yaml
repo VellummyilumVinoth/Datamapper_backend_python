@@ -16,17 +16,22 @@
 
 openapi: 3.0.3
 info:
-  title: File Processing API
+  title: File Upload - Python REST API
   description: API for processing text, PDFs, images, and Word documents to generate mapping instructions or records.
   license:
       name: Apache 2.0
       url: http://www.apache.org/licenses/LICENSE-2.0.html
   version: 1.0.0
+externalDocs:
+  description: Choreo
+  url: https://choreo.dev
 servers:
   - url: http://localhost:5000
 paths:
   /generate_mapping_instruction/:
     post:
+      tags:
+        - File Upload
       summary: Generate mapping instruction from uploaded file or text
       requestBody:
         required: true
@@ -59,6 +64,8 @@ paths:
 
   /generate_record/:
     post:
+      tags:
+        - File Upload
       summary: Generate records from uploaded file or text
       requestBody:
         required: true
