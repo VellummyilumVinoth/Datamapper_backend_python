@@ -244,4 +244,4 @@ def summarize_content_with_gpt4(base64_content: str = None, content_type: str = 
         raise Exception(f"Error summarizing image content with GPT-4: {str(e)}")
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="localhost", port=5000)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
