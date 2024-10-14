@@ -17,18 +17,26 @@
 import base64
 import io
 import os
-
+import uvicorn
 import PyPDF2
 import chardet
 import docx
 import openai
 from PIL import Image
 from dotenv import load_dotenv
-from flask import Flask, request, jsonify
+from fastapi import FastAPI, UploadFile, HTTPException, Form
+from fastapi.middleware.cors import CORSMiddleware
 from tenacity import retry, stop_after_attempt, wait_exponential
 
-# Initialize Flask app
-app = Flask(__name__)
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Load environment variables
 load_dotenv()
@@ -45,7 +53,6 @@ llm = openai.AzureOpenAI(
     api_version=api_version,
 )
 
-# Supported file types
 supported_content_types = [
     "application/pdf",
     "text/plain",
@@ -54,43 +61,34 @@ supported_content_types = [
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 ]
 
-# Endpoint for generating mapping instructions
-@app.route("/file_upload/generate_mapping_instruction/", methods=["POST"])
-def generate_mapping_instruction():
-    file = request.files.get('file')
-    text = request.form.get('text')
-    return process_input(file, text, process_type="mapping_instruction")
+@app.post("/generate_mapping_instruction/")
+async def generate_mapping_instruction(file: UploadFile = None, text: str = Form(None)):
+    return await process_input(file, text, process_type="mapping_instruction")
 
-# Endpoint for generating records
-@app.route("/file_upload/generate_record/", methods=["POST"])
-def generate_record():
-    file = request.files.get('file')
-    text = request.form.get('text')
-    return process_input(file, text, process_type="records")
+@app.post("/generate_record/")
+async def generate_record(file: UploadFile = None, text: str = Form(None)):
+    return await process_input(file, text, process_type="records")
 
-# Process input (either file or text) and route to appropriate processing function
-def process_input(file, text, process_type):
+async def process_input(file: UploadFile, text: str, process_type: str):
     if file:
         if file.content_type not in supported_content_types:
-            return jsonify({"detail": "Unsupported file type. Please upload a supported text or image file."}), 400
-        return process_file(file, process_type)
+            raise HTTPException(status_code=400, detail="Unsupported file type. Please upload a supported text or image file.")
+        return await process_file(file, process_type)
     elif text:
-        return process_text(text, process_type)
+        return await process_text(text, process_type)
     else:
-        return jsonify({"detail": "No file or text provided. Please upload a file or provide text input."}), 400
+        raise HTTPException(status_code=400, detail="No file or text provided. Please upload a file or provide text input.")
 
-# Process a file input (PDF, image, text file, or Word document)
-def process_file(file, process_type):
+async def process_file(file: UploadFile, process_type: str):
     file_location = f"data/input/{file.filename}"
     os.makedirs(os.path.dirname(file_location), exist_ok=True)
 
-    content = file.read()
+    content = await file.read()
     with open(file_location, "wb") as f:
         f.write(content)
 
     file_content = ""
     try:
-        # Handle PDF files
         if file.content_type == "application/pdf":
             with open(file_location, "rb") as pdf_file:
                 reader = PyPDF2.PdfReader(pdf_file)
@@ -101,21 +99,18 @@ def process_file(file, process_type):
             file_content = process_with_gpt4(text_content=file_content, content_type=file.content_type,
                                              process_type=process_type)
 
-        # Handle plain text files
         elif file.content_type == "text/plain":
             detected_encoding = chardet.detect(content)
             file_content = content.decode(detected_encoding['encoding'])
             file_content = process_with_gpt4(text_content=file_content, content_type=file.content_type,
                                              process_type=process_type)
 
-        # Handle Word documents
         elif file.content_type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
             doc = docx.Document(file_location)
             file_content = extract_text_and_images_from_doc_page(doc, process_type)
             file_content = process_with_gpt4(text_content=file_content, content_type=file.content_type,
                                              process_type=process_type)
 
-        # Handle image files (JPEG, PNG)
         elif file.content_type in ["image/jpeg", "image/png"]:
             with open(file_location, "rb") as image_file:
                 img_base64 = base64.b64encode(image_file.read()).decode('utf-8')
@@ -123,20 +118,18 @@ def process_file(file, process_type):
                                                  process_type=process_type)
 
     except Exception as e:
-        return jsonify({"detail": f"Error processing file: {str(e)}"}), 500
+        raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
 
-    return jsonify({"file_content": file_content})
+    return {"file_content": file_content}
 
-# Process text input
-def process_text(text, process_type):
+async def process_text(text: str, process_type: str):
     try:
         file_content = process_with_gpt4(text_content=text, content_type="text/plain", process_type=process_type)
     except Exception as e:
-        return jsonify({"detail": f"Error processing text: {str(e)}"}), 500
+        raise HTTPException(status_code=500, detail=f"Error processing text: {str(e)}")
 
-    return jsonify({"file_content": file_content})
+    return {"file_content": file_content}
 
-# Extract text and images from a PDF page
 def extract_text_and_images_from_pdf_page(page, process_type):
     content = ""
     text_lines = []
@@ -177,7 +170,6 @@ def extract_text_and_images_from_pdf_page(page, process_type):
 
     return content
 
-# Extract text and images from a Word document
 def extract_text_and_images_from_doc_page(doc, process_type):
     file_content = ""
     for para in doc.paragraphs:
@@ -195,7 +187,6 @@ def extract_text_and_images_from_doc_page(doc, process_type):
                 file_content += f"{img_summary}\n"
     return file_content
 
-# Function to call GPT-4 model to process text or image content and return the result
 @retry(stop=stop_after_attempt(5), wait=wait_exponential(multiplier=0.5, min=1, max=5), reraise=True)
 def process_with_gpt4(text_content: str = None, base64_content: str = None, content_type: str = None,
                       process_type: str = None) -> str:
@@ -231,7 +222,6 @@ def process_with_gpt4(text_content: str = None, base64_content: str = None, cont
     except Exception as e:
         raise Exception(f"Error processing with GPT-4: {str(e)}")
 
-# Function to call GPT-4 model to summarize image content
 @retry(stop=stop_after_attempt(5), wait=wait_exponential(multiplier=0.5, min=1, max=5), reraise=True)
 def summarize_content_with_gpt4(base64_content: str = None, content_type: str = None, process_type: str = None) -> str:
     try:
@@ -253,7 +243,5 @@ def summarize_content_with_gpt4(base64_content: str = None, content_type: str = 
     except Exception as e:
         raise Exception(f"Error summarizing image content with GPT-4: {str(e)}")
 
-
-# Main entry point to run the Flask app
 if __name__ == "__main__":
-    app.run()
+    uvicorn.run(app, host="127.0.0.1", port=5000)
