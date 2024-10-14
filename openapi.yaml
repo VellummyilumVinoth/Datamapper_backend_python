@@ -38,9 +38,15 @@ paths:
         content:
           multipart/form-data:
             schema:
-              allOf:
-                - $ref: '#/components/schemas/File_upload_generate_mapping_instruction_post'
-              title: Body
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  title: File
+                text:
+                  type: string
+                  title: Text
       responses:
         '200':
           description: Successful Response
@@ -53,6 +59,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+
   /file_upload/generate_record:
     post:
       tags:
@@ -63,9 +70,15 @@ paths:
         content:
           multipart/form-data:
             schema:
-              allOf:
-                - $ref: '#/components/schemas/File_upload_generate_record_post'
-              title: Body
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  title: File
+                text:
+                  type: string
+                  title: Text
       responses:
         '200':
           description: Successful Response
@@ -78,57 +91,33 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+
 components:
   schemas:
-    File_upload_generate_mapping_instruction_post:
-      properties:
-        file:
-          type: string
-          format: binary
-          title: File
-        text:
-          type: string
-          title: Text
-      type: object
-      title: File_upload_generate_mapping_instruction_post
-    File_upload_generate_record_post:
-      properties:
-        file:
-          type: string
-          format: binary
-          title: File
-        text:
-          type: string
-          title: Text
-      type: object
-      title: File_upload_generate_record_post
     HTTPValidationError:
       properties:
         detail:
+          type: array
           items:
             $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
       title: HTTPValidationError
     ValidationError:
+      type: object
       properties:
         loc:
+          type: array
           items:
             anyOf:
               - type: string
               - type: integer
-          type: array
-          title: Location
         msg:
           type: string
           title: Message
         type:
           type: string
           title: Error Type
-      type: object
       required:
         - loc
         - msg
         - type
-      title: ValidationError
+
