@@ -16,10 +16,10 @@
 
 version: 0.1
 endpoints:
-- name: File Upload
-  port: 8000
-  type: REST
-  networkVisibility: Public
-  context: /
-  schemaFilePath: openapi.yaml
+  - name: File Upload
+    port: 8000
+    type: REST
+    networkVisibility: Public
+    context:
+    schemaFilePath: openapi.yaml
 
