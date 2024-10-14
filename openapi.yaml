@@ -19,7 +19,7 @@ info:
   title: FastAPI
   version: 0.1.0
 paths:
-  /file_upload/generate_mapping_instruction/:
+  /generate_mapping_instruction/:
     post:
       summary: Generate Mapping Instruction
       operationId: generate_mapping_instruction_file_upload_generate_mapping_instruction__post
@@ -42,7 +42,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /file_upload/generate_record/:
+  /generate_record/:
     post:
       summary: Generate Record
       operationId: generate_record_file_upload_generate_record__post
