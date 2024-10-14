@@ -15,7 +15,7 @@
 # under the License.
 
 # Use an official Python runtime as a parent image
-FROM python:3.9-slim-bullseye
+FROM python:alpine
 
 # Set the working directory in the container
 WORKDIR /app
