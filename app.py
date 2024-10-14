@@ -61,11 +61,11 @@ supported_content_types = [
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 ]
 
-@app.post("/file_upload/generate_mapping_instruction/")
+@app.post("/generate_mapping_instruction/")
 async def generate_mapping_instruction(file: UploadFile = None, text: str = Form(None)):
     return await process_input(file, text, process_type="mapping_instruction")
 
-@app.post("/file_upload/generate_record/")
+@app.post("/generate_record/")
 async def generate_record(file: UploadFile = None, text: str = Form(None)):
     return await process_input(file, text, process_type="records")
 
