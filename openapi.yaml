@@ -31,7 +31,7 @@ paths:
   /file_upload/generate_mapping_instruction:
     post:
       tags:
-      - generate-mapping-instruction
+        - generate-mapping-instruction
       summary: Generate Mapping Instruction
       operationId: File_upload_generate_mapping_instruction_post
       requestBody:
@@ -56,7 +56,7 @@ paths:
   /file_upload/generate_record:
     post:
       tags:
-      - generate-record
+        - generate-record
       summary: Generate Record
       operationId: File_upload_generate_record_post
       requestBody:
