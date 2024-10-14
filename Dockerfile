@@ -39,5 +39,5 @@ USER 10016
 EXPOSE 5000
 
 # Command to run the FastAPI app using Uvicorn
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "5000"]
+CMD ["uvicorn", "app:app", "--host", "localhost", "--port", "5000"]
 
