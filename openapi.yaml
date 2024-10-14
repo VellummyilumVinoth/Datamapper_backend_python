@@ -22,13 +22,13 @@ paths:
   /generate_mapping_instruction/:
     post:
       summary: Generate Mapping Instruction
-      operationId: generate_mapping_instruction_file_upload_generate_mapping_instruction__post
+      operationId: File_upload_generate_mapping_instruction__post
       requestBody:
         content:
           multipart/form-data:
             schema:
               allOf:
-                - $ref: '#/components/schemas/Body_generate_mapping_instruction_file_upload_generate_mapping_instruction__post'
+                - $ref: '#/components/schemas/File_upload_generate_mapping_instruction__post'
               title: Body
       responses:
         '200':
@@ -45,13 +45,13 @@ paths:
   /generate_record/:
     post:
       summary: Generate Record
-      operationId: generate_record_file_upload_generate_record__post
+      operationId: File_upload_generate_record__post
       requestBody:
         content:
           multipart/form-data:
             schema:
               allOf:
-                - $ref: '#/components/schemas/Body_generate_record_file_upload_generate_record__post'
+                - $ref: '#/components/schemas/File_upload_generate_record__post'
               title: Body
       responses:
         '200':
@@ -67,7 +67,7 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
-    Body_generate_mapping_instruction_file_upload_generate_mapping_instruction__post:
+    File_upload_generate_mapping_instruction__post:
       properties:
         file:
           type: string
@@ -77,8 +77,8 @@ components:
           type: string
           title: Text
       type: object
-      title: Body_generate_mapping_instruction_file_upload_generate_mapping_instruction__post
-    Body_generate_record_file_upload_generate_record__post:
+      title: File_upload_generate_mapping_instruction__post
+    File_upload_generate_record__post:
       properties:
         file:
           type: string
@@ -88,7 +88,7 @@ components:
           type: string
           title: Text
       type: object
-      title: Body_generate_record_file_upload_generate_record__post
+      title: File_upload_generate_record__post
     HTTPValidationError:
       properties:
         detail:
