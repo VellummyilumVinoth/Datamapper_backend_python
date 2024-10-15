@@ -17,36 +17,26 @@
 openapi: 3.0.2
 info:
   title: File Upload - Python REST API
-  description: API for processing text, PDFs, images, and Word documents to generate mapping instructions or records
+  description: API for processing text, PDFs, images, and Word documents to generate
+    mapping instructions or records
   license:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0
   version: 0.1.0
-externalDocs:
-  description: Choreo
-  url: https://choreo.dev
 servers:
   - url: http://localhost:8000
 paths:
   /file_upload/generate_mapping_instruction:
     post:
       tags:
-        - generate-mapping-instruction
+      - generate-mapping-instruction
       summary: Generate Mapping Instruction
       operationId: File_upload_generate_mapping_instruction_post
       requestBody:
         content:
           multipart/form-data:
             schema:
-              type: object
-              properties:
-                file:
-                  type: string
-                  format: binary
-                  title: File
-                text:
-                  type: string
-                  title: Text
+              $ref: '#/components/schemas/Body_File_upload_generate_mapping_instruction_post'
       responses:
         '200':
           description: Successful Response
@@ -59,26 +49,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-
   /file_upload/generate_record:
     post:
       tags:
-        - generate-record
+      - generate-record
       summary: Generate Record
       operationId: File_upload_generate_record_post
       requestBody:
         content:
           multipart/form-data:
             schema:
-              type: object
-              properties:
-                file:
-                  type: string
-                  format: binary
-                  title: File
-                text:
-                  type: string
-                  title: Text
+              $ref: '#/components/schemas/Body_File_upload_generate_record_post'
       responses:
         '200':
           description: Successful Response
@@ -91,33 +72,59 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-
 components:
   schemas:
+    Body_File_upload_generate_mapping_instruction_post:
+      properties:
+        file:
+          type: string
+          format: binary
+          title: File
+        text:
+          type: string
+          title: Text
+      type: object
+      title: Body_File_upload_generate_mapping_instruction_post
+    Body_File_upload_generate_record_post:
+      properties:
+        file:
+          type: string
+          format: binary
+          title: File
+        text:
+          type: string
+          title: Text
+      type: object
+      title: Body_File_upload_generate_record_post
     HTTPValidationError:
       properties:
         detail:
-          type: array
           items:
             $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
       title: HTTPValidationError
     ValidationError:
-      type: object
       properties:
         loc:
-          type: array
           items:
             anyOf:
-              - type: string
-              - type: integer
+            - type: string
+            - type: integer
+          type: array
+          title: Location
         msg:
           type: string
           title: Message
         type:
           type: string
           title: Error Type
+      type: object
       required:
-        - loc
-        - msg
-        - type
+      - loc
+      - msg
+      - type
+      title: ValidationError
+
 
