@@ -27,33 +27,12 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, UploadFile, HTTPException, Form
 from fastapi.middleware.cors import CORSMiddleware
 from tenacity import retry, stop_after_attempt, wait_exponential
-from contextlib import asynccontextmanager
-from utils.utils import generate_openapi_yaml
-
-# @asynccontextmanager
-# async def lifespan(app: FastAPI):
-#     # Specify the folder where you want to save the file
-#     folder_path = "data1"  # For example, saving in the "data" folder
-#
-#     # Ensure the folder exists; if not, create it
-#     os.makedirs(folder_path, exist_ok=True)
-#
-#     # Construct the full file path
-#     file_path = os.path.join(folder_path, "openapi1.yaml")
-#
-#     # Auto generate openapi.yaml when the server starts
-#     # This is for Choreo deployment
-#     with open(file_path, "w") as f:
-#         f.write(generate_openapi_yaml(app))
-#
-#     yield
 
 app = FastAPI(
     title="File Upload - Python REST API",
     description="API for processing text, PDFs, images, and Word documents to generate mapping instructions or records",
     version="0.1.0",
     license_info={"name": "Apache 2.0", "url": "https://www.apache.org/licenses/LICENSE-2.0"},
-    # lifespan=lifespan
 )
 
 # Changing the default openapi version to 3.0.2 as Choreo does not support the default version
