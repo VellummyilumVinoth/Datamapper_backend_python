@@ -33,7 +33,10 @@ python-multipart
 
 5. Add the environment variables to a .env file in the backend directory
 ```bash
-echo "OPENAI_API_KEY=<your_openai_api_key>" > .env
+echo "AZURE_OPENAI_API_KEY=<your_openai_api_key>" >> .env
+echo "AZURE_OPENAI_ENDPOINT=<your_openai_endpoint>" >> .env
+echo "API_VERSION=<your_openai_api_version>" >> .env
+echo "AZURE_DEPLOYMENT_NAME=<your_openai_deployment_name>" >> .env
 ```
 
 6. Start Copilot server
