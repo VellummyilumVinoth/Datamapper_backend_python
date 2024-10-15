@@ -33,16 +33,13 @@ python-multipart
 
 5. Add the environment variables to a .env file in the backend directory
 ```bash
-"AZURE_OPENAI_API_KEY=<your_openai_api_key>"
-"AZURE_OPENAI_ENDPOINT=<your_openai_endpoint>"
-"API_VERSION=<your_openai_api_version>"
-"AZURE_DEPLOYMENT_NAME=<your_openai_deployment_name>"
+echo "OPENAI_API_KEY=<your_openai_api_key>" > .env
 ```
 
 6. Start Copilot server
 * With Uvicorn single worker (for development)
 ```bash
-uvicorn main:app --port 8000 --reload 
+uvicorn app:app --port 8000 --reload 
 ```
 
 ### Production deployment
