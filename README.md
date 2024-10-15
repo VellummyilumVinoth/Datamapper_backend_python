@@ -40,6 +40,11 @@ echo "AZURE_DEPLOYMENT_NAME=<your_openai_deployment_name>" >> .env
 ```
 
 6. Start Copilot server
+* With Gunicorn process manager - multi worker
+```bash
+gunicorn app:app
+```
+
 * With Uvicorn single worker (for development)
 ```bash
 uvicorn app:app --port 8000 --reload 
