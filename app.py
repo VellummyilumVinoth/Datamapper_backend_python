@@ -18,15 +18,17 @@ import base64
 import io
 import os
 import uvicorn
-import PyPDF2
-import chardet
-import docx
-import openai
 from PIL import Image
 from dotenv import load_dotenv
 from fastapi import FastAPI, UploadFile, HTTPException, Form
 from fastapi.middleware.cors import CORSMiddleware
 from tenacity import retry, stop_after_attempt, wait_exponential
+import pillow_heif
+import anthropic
+import re
+import subprocess
+from docx import Document
+from reportlab.pdfgen import canvas
 
 app = FastAPI(
     title="File Upload - Python REST API",
@@ -48,25 +50,18 @@ app.add_middleware(
 
 # Load environment variables
 load_dotenv()
-api_key = os.getenv('AZURE_OPENAI_API_KEY')
-azure_endpoint = os.getenv('AZURE_OPENAI_ENDPOINT')
-api_version = os.getenv('API_VERSION')
-azure_deployment = os.getenv('AZURE_DEPLOYMENT_NAME')
-
-# Initialize Azure OpenAI
-llm = openai.AzureOpenAI(
-    api_key=api_key,
-    azure_deployment=azure_deployment,
-    azure_endpoint=azure_endpoint,
-    api_version=api_version,
-)
+anthropic_key = os.getenv("ANTHROPIC_API_KEY")
 
 supported_content_types = [
     "application/pdf",
-    "text/plain",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/msword",
     "image/jpeg",
+    "image/jpg",
     "image/png",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    "image/heic",
+    "image/heif",
+    "text/plain"
 ]
 
 @app.post("/file_upload/generate_mapping_instruction", operation_id="File_upload_generate_mapping_instruction_post", tags=["generate-mapping-instruction"])
@@ -83,173 +78,229 @@ async def process_input(file: UploadFile, text: str, process_type: str):
             raise HTTPException(status_code=400, detail="Unsupported file type. Please upload a supported text or image file.")
         return await process_file(file, process_type)
     elif text:
-        return await process_text(text, process_type)
+        message = await process_text(text, process_type)
+        file_content = extract_ballerina_code(message, process_type)
+        return {"file_content": file_content}
     else:
         raise HTTPException(status_code=400, detail="No file or text provided. Please upload a file or provide text input.")
 
-async def process_file(file: UploadFile, process_type: str):
-    file_location = f"data/input/{file.filename}"
-    os.makedirs(os.path.dirname(file_location), exist_ok=True)
+# Converts input file to PDF using unoconv
+async def convert_to_pdf(input_file, output_file=None):
+    if not output_file:
+        output_file = os.path.splitext(input_file)[0] + ".pdf"
+    try:
+        subprocess.run(["unoconv", "-f", "pdf", "-o", output_file, input_file], check=True)
+        return output_file
+    except subprocess.CalledProcessError as e:
+        raise HTTPException(status_code=500, detail=f"Error during conversion: {str(e)}")
 
+# Extracts Ballerina code or mapping fields from the message.
+def extract_ballerina_code(message, process_type):
+    if process_type == "records":
+        ballerina_code = re.search(r"<ballerina_code>(.*?)</ballerina_code>", str(message), re.DOTALL)
+        if ballerina_code:
+            raw_content = ballerina_code.group(1)
+            return raw_content.encode("utf-8").decode("unicode_escape").strip()
+        else:
+            print("No Ballerina code found.")
+    else:
+        mapping_fields = re.search(r"<mapping_fields>(.*?)</mapping_fields>", str(message), re.DOTALL)
+        if mapping_fields:
+            raw_content = mapping_fields.group(1)
+            return raw_content.encode("utf-8").decode("unicode_escape").strip()
+        else:
+            print("No mapping fields found.")
+    return ""
+
+# Convert DOCX to PDF
+async def docx_to_pdf(input_path, output_path):
+    document = Document(input_path)
+    pdf = canvas.Canvas(output_path)
+    x, y = 100, 800
+    line_height = 20
+
+    for paragraph in document.paragraphs:
+        text = paragraph.text.strip()
+        if text:
+            pdf.drawString(x, y, text)
+            y -= line_height
+            if y < 50:
+                pdf.showPage()
+                y = 800
+    pdf.save()
+
+# Process PDF file
+async def process_pdf(file_location, process_type):
+    try:
+        with open(file_location, "rb") as f:
+            pdf_data = base64.b64encode(f.read()).decode('utf-8')
+        return extraction_using_anthropic(pdf_data=pdf_data, process_type=process_type)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"PDF processing error: {str(e)}")
+
+# Process DOCX file
+async def process_word(file_location, process_type):
+    pdf_path = file_location.replace(".docx", ".pdf")
+    try:
+        await docx_to_pdf(file_location, pdf_path)
+        return await process_pdf(pdf_path, process_type)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"DOCX processing error: {str(e)}")
+
+# Converts image file to PDF and processes
+async def process_image(file_location, process_type, content_type):
+    if content_type in ["image/heic", "image/heif"]:
+        pillow_heif.register_heif_opener()
+        with open(file_location, "rb") as heic_file:
+            image = Image.open(io.BytesIO(heic_file.read()))
+            converted_path = file_location.replace(".heic", ".jpg").replace(".heif", ".jpg")
+            image.convert('RGB').save(converted_path, format="JPEG")
+            file_location = converted_path
+            content_type = "image/jpeg"
+
+    with open(file_location, "rb") as image_file:
+        img_base64 = base64.b64encode(image_file.read()).decode('utf-8')
+        file_content = img_extraction_using_anthropic(img_data=img_base64, process_type=process_type, content_type=content_type)
+
+    return file_content
+
+# Saves uploaded file to disk
+async def save_file(file: UploadFile, file_location: str):
+    os.makedirs(os.path.dirname(file_location), exist_ok=True)
     content = await file.read()
     with open(file_location, "wb") as f:
         f.write(content)
 
-    file_content = ""
+async def process_text(text:str, process_type: str):
+    try:
+        file_content = text_extraction_using_anthropic(text_content=text, process_type=process_type)
+        print(file_content)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error processing text: {str(e)}")
+
+    return {"file_content": file_content}
+
+async def process_file(file: UploadFile, process_type: str):
+    file_location = f"data/input/{file.filename}"
+    await save_file(file, file_location)
+
     try:
         if file.content_type == "application/pdf":
-            with open(file_location, "rb") as pdf_file:
-                reader = PyPDF2.PdfReader(pdf_file)
-                for page in reader.pages:
-                    page_content = extract_text_and_images_from_pdf_page(page, process_type)
-                    file_content += page_content
+            message = await process_pdf(file_location=file_location, process_type=process_type)
+        elif file.content_type in ["application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/msword"]:
+            message = await process_word(file_location=file_location, process_type=process_type)
+        elif file.content_type in ["image/jpeg", "image/png", "image/heif", "image/heic"]:
+            message = await process_image(file_location=file_location, process_type=process_type, content_type=file.content_type)
+        elif file.content_type in ["text/plain"]:
+            with open(file_location, "r") as file:
+                content = file.read()
+            message = await process_text(text=content, process_type=process_type)
+        else:
+            raise HTTPException(status_code=400, detail="Unsupported file type")
 
-            file_content = process_with_gpt4(text_content=file_content, content_type=file.content_type,
-                                             process_type=process_type)
-
-        elif file.content_type == "text/plain":
-            detected_encoding = chardet.detect(content)
-            file_content = content.decode(detected_encoding['encoding'])
-            file_content = process_with_gpt4(text_content=file_content, content_type=file.content_type,
-                                             process_type=process_type)
-
-        elif file.content_type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-            doc = docx.Document(file_location)
-            file_content = extract_text_and_images_from_doc_page(doc, process_type)
-            file_content = process_with_gpt4(text_content=file_content, content_type=file.content_type,
-                                             process_type=process_type)
-
-        elif file.content_type in ["image/jpeg", "image/png"]:
-            with open(file_location, "rb") as image_file:
-                img_base64 = base64.b64encode(image_file.read()).decode('utf-8')
-                file_content = process_with_gpt4(base64_content=img_base64, content_type=file.content_type,
-                                                 process_type=process_type)
+        file_content = extract_ballerina_code(message, process_type)
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
 
     return {"file_content": file_content}
 
-async def process_text(text: str, process_type: str):
-    try:
-        file_content = process_with_gpt4(text_content=text, content_type="text/plain", process_type=process_type)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing text: {str(e)}")
-
-    return {"file_content": file_content}
-
-def extract_text_and_images_from_pdf_page(page, process_type):
-    content = ""
-    text_lines = []
-    if text := page.extract_text():
-        text_lines = text.splitlines()
-
-    xobjects = page['/Resources'].get('/XObject', {})
-    image_keys = list(xobjects.keys())
-    image_index = 0
-
-    for line in text_lines:
-        content += line + "\n"
-        if image_index < len(image_keys):
-            obj_key = image_keys[image_index]
-            vobj = xobjects[obj_key].get_object()
-
-            if vobj['/Subtype'] == '/Image':
-                img_format, img = None, None
-                if vobj['/Filter'] == '/FlateDecode':
-                    buf = vobj.get_data()
-                    size = (vobj['/Width'], vobj['/Height'])
-                    img = Image.frombytes('RGB', size, buf)
-                    img_format = 'PNG'
-                elif vobj['/Filter'] == '/DCTDecode':
-                    buf = vobj.get_data()
-                    img = Image.open(io.BytesIO(buf))
-                    img_format = 'JPEG'
-
-                if img:
-                    img_byte_arr = io.BytesIO()
-                    img.save(img_byte_arr, format=img_format)
-                    img_base64 = base64.b64encode(img_byte_arr.getvalue()).decode('utf-8')
-                    img_summary = summarize_content_with_gpt4(base64_content=img_base64,
-                                                              content_type=f"image/{img_format.lower()}",
-                                                              process_type=f"{process_type}")
-                    content += f"\n{img_summary}\n"
-                    image_index += 1
-
-    return content
-
-def extract_text_and_images_from_doc_page(doc, process_type):
-    file_content = ""
-    for para in doc.paragraphs:
-        file_content += para.text + "\n"
-        if para._element.xpath(".//a:blip"):
-            for rel in para._element.xpath(".//a:blip"):
-                img_rid = rel.get("{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed")
-                img_bytes = doc.part.related_parts[img_rid].blob
-
-                img_base64 = base64.b64encode(img_bytes).decode('utf-8')
-                img_format = Image.open(io.BytesIO(img_bytes)).format.lower()
-                img_summary = summarize_content_with_gpt4(base64_content=img_base64, content_type=f"image/{img_format}",
-                                                          process_type=f"{process_type}")
-
-                file_content += f"{img_summary}\n"
-    return file_content
-
-@retry(stop=stop_after_attempt(5), wait=wait_exponential(multiplier=0.5, min=1, max=5), reraise=True)
-def process_with_gpt4(text_content: str = None, base64_content: str = None, content_type: str = None,
-                      process_type: str = None) -> str:
+@retry(stop=stop_after_attempt(8), wait=wait_exponential(multiplier=1, min=2, max=10), reraise=True)
+def extraction_using_anthropic(pdf_data, process_type):
     try:
         prompt_file_path = os.path.join("utils", f"{process_type}_extraction.txt")
         with open(prompt_file_path, 'r') as file:
             prompt_text = file.read()
 
-        if content_type in ["image/jpeg", "image/png"]:
-            content_input = {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": prompt_text
-                    },
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:{content_type};base64,{base64_content}"
+        client = anthropic.Anthropic()
+        message = client.beta.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            betas=["pdfs-2024-09-25"],
+            max_tokens=8192,
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "document",
+                            "source": {
+                                "type": "base64",
+                                "media_type": "application/pdf",
+                                "data": pdf_data
+                            }
+                        },
+                        {
+                            "type": "text",
+                            "text": prompt_text
                         }
-                    }
-                ]
-            }
-        else:
-            content_input = {
-                "role": "user",
-                "content": prompt_text + "\n\n" + text_content
-            }
-        response = llm.chat.completions.create(model="gpt-4", messages=[content_input], max_tokens=1000)
-        return response.choices[0].message.content
+                    ]
+                }
+            ],
+        )
+
+        return message
 
     except Exception as e:
-        raise Exception(f"Error processing with GPT-4: {str(e)}")
+        raise Exception(f"Error processing with Claude: {str(e)}")
 
-@retry(stop=stop_after_attempt(5), wait=wait_exponential(multiplier=0.5, min=1, max=5), reraise=True)
-def summarize_content_with_gpt4(base64_content: str = None, content_type: str = None, process_type: str = None) -> str:
+@retry(stop=stop_after_attempt(8), wait=wait_exponential(multiplier=1, min=2, max=10), reraise=True)
+def img_extraction_using_anthropic(img_data, process_type, content_type):
     try:
-        prompt_file_path = os.path.join("utils", f"{process_type}_image_summarizer.txt")
+        prompt_file_path = os.path.join("utils", f"{process_type}_extraction.txt")
         with open(prompt_file_path, 'r') as file:
-            summarize_text = file.read()
+            prompt_text = file.read()
 
-        content_input = {
-            "role": "user",
-            "content": [
-                {"type": "text", "text": summarize_text},
-                {"type": "image_url", "image_url": {"url": f"data:{content_type};base64,{base64_content}"}}
-            ]
-        }
-
-        response = llm.chat.completions.create(model="gpt-4", messages=[content_input], max_tokens=1000)
-        return response.choices[0].message.content
+        client = anthropic.Anthropic()
+        message = client.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=8192,
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image",
+                            "source": {
+                                "type": "base64",
+                                "media_type": content_type,
+                                "data": img_data,
+                            },
+                        },
+                        {
+                            "type": "text",
+                            "text": prompt_text
+                        }
+                    ],
+                }
+            ],
+        )
+        return message
 
     except Exception as e:
-        raise Exception(f"Error summarizing image content with GPT-4: {str(e)}")
+        raise Exception(f"Error processing with Claude: {str(e)}")
+
+@retry(stop=stop_after_attempt(8), wait=wait_exponential(multiplier=1, min=2, max=10), reraise=True)
+def text_extraction_using_anthropic(text_content, process_type):
+    try:
+        prompt_file_path = os.path.join("utils", f"{process_type}_extraction.txt")
+        with open(prompt_file_path, 'r') as file:
+            prompt_text = file.read()
+
+        client = anthropic.Anthropic()
+        message = client.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=8192,
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt_text + "\n\n" + text_content
+                }
+            ],
+        )
+        return message
+
+    except Exception as e:
+        raise Exception(f"Error processing with Claude: {str(e)}")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

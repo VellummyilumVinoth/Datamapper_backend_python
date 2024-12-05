@@ -21,22 +21,21 @@ pip install -r requirements.txt
 # Following libraries are used in the project
 fastapi
 uvicorn
+gunicorn
 python-dotenv
-pypdf2
-chardet
-python-docx
 openai
 pillow
 tenacity
 python-multipart
+anthropic
+pillow_heif
+python-docx
+reportlab
 ```
 
 5. Add the environment variables to a .env file in the backend directory
 ```bash
-echo "AZURE_OPENAI_API_KEY=<your_openai_api_key>" >> .env
-echo "AZURE_OPENAI_ENDPOINT=<your_openai_endpoint>" >> .env
-echo "API_VERSION=<your_openai_api_version>" >> .env
-echo "AZURE_DEPLOYMENT_NAME=<your_openai_deployment_name>" >> .env
+echo "ANTHROPIC_API_KEY=<your_anthropic_api_key>" >> .env
 ```
 
 6. Start Copilot server
